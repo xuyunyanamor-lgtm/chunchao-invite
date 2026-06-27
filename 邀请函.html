@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>春潮杯 · 赛博邀请函</title>
+    <style>
+        :root {
+            --gold: #c5a86a;
+            --gold-light: #e0c87c;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            font-family: "Noto Serif SC", "华文楷体", "KaiTi", "楷体", "宋体", "SimSun", serif;
+            background: #021218;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            cursor: pointer;
+        }
+
+        /* ========== 视频背景 ========== */
+        .video-bg {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            transition: opacity 1.2s ease;
+        }
+        .video-bg video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .video-bg.fade-out {
+            opacity: 0;
+        }
+
+        /* ========== 逐句文字层 ========== */
+        .text-stage {
+            position: fixed;
+            inset: 0;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            transition: opacity 0.8s ease;
+        }
+        .sentence {
+            position: absolute;
+            font-size: clamp(20px, 5vw, 32px);
+            color: #f7f3e6;
+            text-align: center;
+            letter-spacing: 4px;
+            text-shadow: 0 0 20px rgba(207, 233, 229, 0.7), 0 4px 15px rgba(0, 0, 0, 0.6);
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+            max-width: 85%;
+            line-height: 1.6;
+            pointer-events: none;
+        }
+        .sentence.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .sentence.hide {
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+
+        /* ========== 信封容器 ========== */
+        .envelope-container {
+            position: fixed;
+            inset: 0;
+            z-index: 3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 1s ease;
+        }
+        .envelope-container.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .envelope-stage {
+            position: relative;
+            width: min(580px, 90vw);
+            max-height: 90vh;          /* 手机端防止超出屏幕 */
+            overflow-y: auto;          /* 内容过长时可滚动 */
+            transition: all 0.4s ease;
+            border-radius: 12px;
+            /* 隐藏滚动条但保持功能（可选） */
+            scrollbar-width: thin;
+            scrollbar-color: #b49460 #f5f0e6;
+        }
+        .envelope-stage::-webkit-scrollbar {
+            width: 6px;
+        }
+        .envelope-stage::-webkit-scrollbar-track {
+            background: #f5f0e6;
+            border-radius: 12px;
+        }
+        .envelope-stage::-webkit-scrollbar-thumb {
+            background: #b49460;
+            border-radius: 12px;
+        }
+
+        /* 封面 */
+        .cover-panel {
+            position: relative;
+            z-index: 4;
+            background: linear-gradient(145deg, #2b2f3a 0%, #1c1f28 100%);
+            border: 2px solid var(--gold);
+            border-radius: 12px;
+            padding: 50px 30px;
+            text-align: center;
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+            transition: transform 0.7s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.7s ease;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        .cover-panel::before {
+            content: "";
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            right: 12px;
+            bottom: 12px;
+            border: 1px solid rgba(197, 168, 106, 0.35);
+            border-radius: 6px;
+            pointer-events: none;
+        }
+        .seal-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+            color: var(--gold);
+            letter-spacing: 4px;
+        }
+        .title-main {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--gold-light);
+            letter-spacing: 8px;
+            margin-bottom: 8px;
+        }
+        .title-sub {
+            font-size: 18px;
+            color: #b8a67c;
+            letter-spacing: 6px;
+            margin-bottom: 28px;
+            border-top: 1px solid rgba(197, 168, 106, 0.4);
+            border-bottom: 1px solid rgba(197, 168, 106, 0.4);
+            display: inline-block;
+            padding: 6px 20px;
+        }
+        .hint-text {
+            font-size: 15px;
+            color: #8e8e8e;
+            letter-spacing: 3px;
+            margin-top: 12px;
+            animation: hintPulse 2s infinite;
+        }
+        @keyframes hintPulse {
+            0% { opacity: 0.45; }
+            50% { opacity: 0.9; }
+            100% { opacity: 0.45; }
+        }
+        .sender-line {
+            margin-top: 30px;
+            font-size: 14px;
+            color: #9b9b9b;
+            letter-spacing: 2px;
+        }
+
+        /* 信纸 */
+        .letter-panel {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: #fdf8f0;
+            border: 2px solid #b49460;
+            border-radius: 12px;
+            padding: 40px 32px 32px;
+            color: #3e3322;
+            line-height: 1.9;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+            z-index: 3;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.6s ease;
+            min-height: 500px;
+            display: flex;
+            flex-direction: column;
+        }
+        .letter-panel::before {
+            content: "";
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            bottom: 20px;
+            border: 1px dashed #dac29c;
+            border-radius: 6px;
+            pointer-events: none;
+            opacity: 0.5;
+        }
+        .header-logo {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            color: #7a5a3a;
+            letter-spacing: 4px;
+            margin-bottom: 14px;
+            position: relative;
+            z-index: 1;
+        }
+        .salute {
+            font-size: 17px;
+            margin-bottom: 18px;
+            position: relative;
+            z-index: 1;
+        }
+        .content-block {
+            font-size: 15px;
+            text-align: justify;
+            position: relative;
+            z-index: 1;
+            flex: 1;
+        }
+        .content-block p {
+            margin-bottom: 12px;
+            text-indent: 2em;
+        }
+        .feature-title {
+            font-weight: bold;
+            color: #5e3e1c;
+            margin-top: 10px;
+            margin-bottom: 4px !important;
+            text-indent: 2em;
+        }
+        .closing {
+            margin-top: 20px;
+            text-align: right;
+            font-size: 15px;
+            position: relative;
+            z-index: 1;
+        }
+        .closing .signature {
+            margin-top: 12px;
+            font-weight: bold;
+            color: #5e3e1c;
+        }
+
+        /* 打开状态：封面上移隐藏，信纸变为相对定位自然居中 */
+        .envelope-stage.opened .cover-panel {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            transform: translateY(-120%);
+            opacity: 0;
+            pointer-events: none;
+        }
+        .envelope-stage.opened .letter-panel {
+            position: relative;
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* 手机端额外优化 */
+        @media (max-width: 500px) {
+            .cover-panel {
+                padding: 30px 20px;
+                min-height: 340px;
+            }
+            .title-main {
+                font-size: 26px;
+                letter-spacing: 4px;
+            }
+            .letter-panel {
+                padding: 25px 18px 20px;
+                min-height: auto; /* 移除最小高度限制 */
+            }
+            .content-block {
+                font-size: 14px;
+            }
+            .envelope-stage {
+                max-height: 85vh; /* 给手机更多呼吸空间 */
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 视频背景 -->
+    <div class="video-bg" id="videoBg">
+        <video autoplay muted loop playsinline>
+            <source src="invite.mp4" type="video/mp4">
+            您的浏览器不支持视频背景。
+        </video>
+    </div>
+
+    <!-- 逐句文字 -->
+    <div class="text-stage" id="textStage">
+        <div class="sentence" id="s1">你想要锻炼自己的评委水平吗？</div>
+        <div class="sentence" id="s2">你也对评委奇怪的判准心生不满吗？</div>
+        <div class="sentence" id="s3">听完评委的话，觉得有很多想要回击的吗？</div>
+        <div class="sentence" id="s4">这一次，你来给我打分！</div>
+    </div>
+
+    <!-- 信封容器 -->
+    <div class="envelope-container" id="envelopeContainer">
+        <div class="envelope-stage" id="envelopeStage">
+            <div class="cover-panel" id="coverPanel">
+                <div class="seal-icon">⚜️</div>
+                <div class="title-main">春潮杯</div>
+                <div class="title-sub">辩论友谊赛</div>
+                <div style="font-size:15px; color:#b8a67c; letter-spacing:3px; margin-bottom:5px;">赛博邀请函</div>
+                <div class="hint-text">— 轻触开启 —</div>
+                <div class="sender-line">赛事筹备组 · 丙午年夏</div>
+            </div>
+            <div class="letter-panel" id="letterPanel">
+                <div class="header-logo">⚓ 中国海洋大学 · 春潮杯 ⚓</div>
+                <div class="salute">各院辩友雅鉴：</div>
+                <div class="content-block">
+                    <p>海风送夏，以辩会友。赛事筹备组现拟于暑假期间，举行“春潮杯”辩论友谊赛。赛事为限制级，仅面向25级同学，诚邀贵院同学参与。</p>
+                    <p>本次赛事设两项特色规程：</p>
+                    <p class="feature-title">其一，评分方式倒反天罡。</p>
+                    <p>赛后评委先行述票，暂不公布投票结果；随后由辩手就述票质量进行评分，依此权衡评委票数权重。分数公布后，设不限时自由讨论环节，凡涉评判之疑义，皆可坦率切磋、畅所欲言。此举意在使辩手得尽未申之意，亦使评委于实战反馈中磨砺判准，可谓双向锻炼。</p>
+                    <p class="feature-title">其二，推行混合组队制。</p>
+                    <p>基本采用“一带一”模式，由分属不同学院之二位辩手牵头，各携本院一人，合为四人一队。跨院协作，以辩会友，俾使各院同学消弭隔阂，日相亲善。</p>
+                    <p>赛事之旨，非争高下，而在聚合。唯愿海大辩手咸集于此，不以院墙为界，但以辩才相交。切磋之余，情谊自生；交锋之后，隔阂自消。团结海大辩手，共兴思辨之风，是所望也。</p>
+                </div>
+                <div class="closing">
+                    <p>顺颂时祺，恭候佳音。</p>
+                    <p class="signature">赛事筹备组 谨启</p>
+                    <p style="font-size:13px; color:#7a6a50;">丙午年夏</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const videoBg = document.getElementById('videoBg');
+            const textStage = document.getElementById('textStage');
+            const envelopeContainer = document.getElementById('envelopeContainer');
+            const envelopeStage = document.getElementById('envelopeStage');
+            const coverPanel = document.getElementById('coverPanel');
+
+            const sentenceEls = [
+                document.getElementById('s1'),
+                document.getElementById('s2'),
+                document.getElementById('s3'),
+                document.getElementById('s4')
+            ];
+
+            let currentStep = 0;          // 0-3:句子阶段，4:等待信封，5:信封显示，6:已打开
+            let activeSentence = -1;
+
+            function showSentence(index) {
+                if (activeSentence >= 0) {
+                    sentenceEls[activeSentence].classList.remove('show');
+                    sentenceEls[activeSentence].classList.add('hide');
+                    const prev = activeSentence;
+                    setTimeout(() => {
+                        sentenceEls[prev].classList.remove('hide');
+                    }, 400);
+                }
+                sentenceEls[index].classList.add('show');
+                activeSentence = index;
+            }
+
+            function transitionToEnvelope() {
+                videoBg.classList.add('fade-out');
+                textStage.style.opacity = '0';
+                setTimeout(() => {
+                    envelopeContainer.classList.add('visible');
+                }, 400);
+            }
+
+            function openEnvelope() {
+                if (currentStep === 5) {
+                    envelopeStage.classList.add('opened');
+                    // 自动滚动到信封顶部（信纸开头）
+                    envelopeStage.scrollTo({ top: 0, behavior: 'smooth' });
+                    currentStep = 6;
+                }
+            }
+
+            document.body.addEventListener('click', function(e) {
+                if (currentStep < 4) {
+                    showSentence(currentStep);
+                    currentStep++;
+                } else if (currentStep === 4) {
+                    transitionToEnvelope();
+                    currentStep = 5;
+                } else if (currentStep === 5) {
+                    openEnvelope();
+                }
+                // currentStep === 6 不再响应
+            });
+
+            // 防止视频背景上的点击被意外拦截（视频层pointer-events:none，这里确保）
+            // 可选的自动播放第一句（如需点击才出现第一句，请注释下面一行）
+            // setTimeout(() => { showSentence(0); currentStep = 1; }, 600);
+        })();
+    </script>
+</body>
+</html>
